@@ -7,5 +7,5 @@
  * Requires PHP: 7.4
  */
 
-include dirname(__FILE__) . '/events_create.php';
-include dirname(__FILE__) . '/widgets/featureEventsWidget.php';
+include dirname(__FILE__) . '/events_post_types.php';
+include dirname(__FILE__) . '/widgets/feature_events_widget.php';
