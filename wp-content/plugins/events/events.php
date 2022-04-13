@@ -9,3 +9,4 @@
 
 include dirname(__FILE__) . '/events_post_types.php';
 include dirname(__FILE__) . '/widgets/feature_events_widget.php';
+include dirname(__FILE__) . '/meta_box/register_meta_boxes.php';

@@ -1,11 +1,4 @@
 <?php
-/*
- * Plugin Name: Events
- * Description: Events plugin
- * Author:      Daria Tymoshenko
- * Version:     1.0
- * Requires PHP: 7.4
- */
 
 add_action('init', 'register_events_post_types');
 function register_events_post_types()
@@ -37,38 +30,6 @@ function register_events_post_types()
         'menu_position' => 8,
         'supports' => array('title', 'editor', 'thumbnail')
     ]);
-}
-
-// добавление event date
-add_action("admin_init", "add_post_meta_boxes");
-function add_post_meta_boxes()
-{
-    add_meta_box(
-        "post_metadata_events_post",
-        "Event Date",
-        "post_meta_box_events_post",
-        "events",
-        "side",
-        "low"
-    );
-}
-
-add_action('save_post', 'save_post_meta_boxes');
-function save_post_meta_boxes()
-{
-    global $post;
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        return;
-    }
-    update_post_meta($post->ID, "_event_date", sanitize_text_field($_POST["_event_date"]));
-}
-
-function post_meta_box_events_post()
-{
-    global $post;
-    $custom = get_post_custom($post->ID);
-    $advertisingCategory = $custom["_event_date"][0];
-    echo "<input type=\"date\" name=\"_event_date\" value=\"" . $advertisingCategory . "\" placeholder=\"Event Date\">";
 }
 
 // создание таксономии
@@ -107,9 +68,7 @@ function create_event_type_taxonomy()
         'show_admin_column' => false,
         'show_in_rest' => null,
         'rest_base' => null,
-
     ]);
-
 
 }
 
@@ -117,19 +76,31 @@ function create_event_type_taxonomy()
 add_shortcode('events_list', 'list_events');
 function list_events($arguments)
 {
+    global $post;
     $args = array(
         'post_type' => 'events',
-        'post_status' => $arguments['post_status'],
+        'meta_query' => [['key' => '_event_status', 'value' => $arguments['status']]],
+        'meta_key' => '_event_date',
         'posts_per_page' => $arguments['posts_per_page']
     );
+
     $query = new WP_Query($args);
     $content = '<ul>';
-    if ($query->have_posts()):
-        while ($query->have_posts()): $query->the_post();
-            $content .= '<li>' . get_the_title() . ' ' . get_the_date() . '</li>';;
+    if($query->have_posts()):
+        while($query->have_posts()): $query->the_post();
+            $exp_date = get_post_meta(get_the_ID(), '_event_date', true);
+            date_default_timezone_set('America/New_York');
+            $today = new DateTime();
+            if($exp_date < $today->format('Y-m-d h:i:sa')){
+
+                $current_post = get_post( get_the_ID(), 'ARRAY_A' );
+                $current_post['post_status'] = 'trash';
+                wp_update_post($current_post);
+            }
+            $content .= '<li><a href="'.get_the_permalink().'">'. get_the_title() .'</a> - '.date_format(date_create(get_post_meta($post->ID, '_event_date', true)), 'jS F').'</li>';
         endwhile;
     else:
-        __('Sorry, nothing to display.');
+        _e('Sorry, nothing to display.', 'vicodemedia');
     endif;
     $content .= '</ul>';
     return $content;
