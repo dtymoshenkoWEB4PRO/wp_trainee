@@ -1,8 +1,8 @@
 <?php
 
+//create events post type
 add_action('init', 'register_events_post_types');
-function register_events_post_types()
-{
+function register_events_post_types() {
     register_post_type('events', [
         'label' => null,
         'labels' => [
@@ -32,10 +32,35 @@ function register_events_post_types()
     ]);
 }
 
-// создание таксономии
+add_action('add_meta_boxes', 'events_add_custom_box');
+function events_add_custom_box() {
+    add_meta_box('metadata_events', 'Events Date and Status', 'events_meta_box_callback', 'events');
+}
+
+function events_meta_box_callback() {
+    include dirname(__FILE__) . '/meta_box/events-form.php';
+}
+
+add_action('save_post', 'events_save_postdata');
+function events_save_postdata() {
+    global $post;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    $fields = [
+        '_event_status',
+        '_event_date',
+    ];
+    foreach ($fields as $field) {
+        if (array_key_exists($field, $_POST)) {
+            update_post_meta($post->ID, $field, sanitize_text_field($_POST[$field]));
+        }
+    }
+}
+
+// create taxnomy
 add_action('init', 'create_event_type_taxonomy');
-function create_event_type_taxonomy()
-{
+function create_event_type_taxonomy() {
     register_taxonomy('event_type', ['events'], [
         'label' => '',
         'labels' => [
@@ -72,11 +97,10 @@ function create_event_type_taxonomy()
 
 }
 
-// генерация shortcode
+//  shortcode
 add_shortcode('events_list', 'list_events');
-function list_events($arguments)
-{
-    global $post;
+function list_events($arguments) {
+    $post = get_post();
     $args = array(
         'post_type' => 'events',
         'meta_query' => [['key' => '_event_status', 'value' => $arguments['status']]],
@@ -86,22 +110,20 @@ function list_events($arguments)
 
     $query = new WP_Query($args);
     $content = '<ul>';
-    if($query->have_posts()):
-        while($query->have_posts()): $query->the_post();
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
             $exp_date = get_post_meta(get_the_ID(), '_event_date', true);
-            date_default_timezone_set('America/New_York');
+            date_default_timezone_set('Europe/Kiev');
             $today = new DateTime();
-            if($exp_date < $today->format('Y-m-d h:i:sa')){
-
-                $current_post = get_post( get_the_ID(), 'ARRAY_A' );
+            if ($exp_date < $today->format('Y-m-d h:i:sa')) {
+                $current_post = get_post(get_the_ID(), 'ARRAY_A');
                 $current_post['post_status'] = 'trash';
                 wp_update_post($current_post);
             }
-            $content .= '<li><a href="'.get_the_permalink().'">'. get_the_title() .'</a> - '.date_format(date_create(get_post_meta($post->ID, '_event_date', true)), 'jS F').'</li>';
-        endwhile;
-    else:
-        _e('Sorry, nothing to display.', 'vicodemedia');
-    endif;
+            $content .= '<li>' . get_the_title() . ' - ' . date_format(date_create(get_post_meta($post->ID, '_event_date', true)), 'jS F') . '</li>';
+        }
+    }
     $content .= '</ul>';
     return $content;
 }
