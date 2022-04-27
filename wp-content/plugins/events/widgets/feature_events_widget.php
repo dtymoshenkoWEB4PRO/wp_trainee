@@ -10,7 +10,7 @@
 class FeatureEventsWidget extends WP_Widget {
     function __construct() {
         parent::__construct(
-            'foo_widget',
+            'events_widget',
             'Events',
             array('description' => 'Feature events widget')
         );
