@@ -67,8 +67,8 @@ class FeatureEventsWidget extends WP_Widget {
 
 }
 
-add_action('widgets_init', 'register_foo_widget');
-function register_foo_widget()
+add_action('widgets_init', 'register_events_widget');
+function register_events_widget()
 {
     register_widget('FeatureEventsWidget');
 }
